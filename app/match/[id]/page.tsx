@@ -182,7 +182,7 @@ export default async function MatchPage({
       {kickedOff && (
         <section className="mt-8">
           <h2 className="mb-3 text-sm font-semibold text-neutral-200">
-            Everyone&apos;s picks
+            Your group&apos;s picks
           </h2>
           {others.length === 0 ? (
             <p className="text-sm text-neutral-500">No other predictions.</p>

@@ -4,6 +4,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { getTeamMap, teamName } from "@/lib/data/teams";
 import { isLocked } from "@/lib/lock";
 import { Countdown } from "@/components/countdown";
+import { InviteButton } from "@/components/invite-button";
 
 // Per-user, session-dependent — never statically cache the dashboard.
 export const dynamic = "force-dynamic";
@@ -48,36 +49,39 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, onboarded, is_admin, champion_team_id")
+    .select("display_name, onboarded, is_admin, champion_team_id, group_id")
     .eq("id", user.id)
     .single();
 
-  // First login (or onboarding never finished) → capture a display name.
-  if (!profile || !profile.onboarded) {
+  // Need a display name AND a group before using the app.
+  if (!profile || !profile.onboarded || !profile.group_id) {
     redirect("/onboarding");
   }
 
   // Next few matches still open for prediction.
   const nowIso = new Date().toISOString();
-  const [teamMap, { data: upcoming }, { data: board }] = await Promise.all([
-    getTeamMap(supabase),
-    supabase
-      .from("matches")
-      .select("id, kickoff_at, home_team_id, away_team_id")
-      .neq("status", "finished")
-      .gt("kickoff_at", nowIso)
-      .order("kickoff_at", { ascending: true })
-      .limit(3),
-    supabase
-      .from("leaderboard")
-      .select("user_id, total_points, created_at")
-      .order("total_points", { ascending: false })
-      .order("exact_hits", { ascending: false })
-      .order("created_at", { ascending: true }),
-  ]);
+  const [teamMap, { data: upcoming }, { data: board }, { data: group }] =
+    await Promise.all([
+      getTeamMap(supabase),
+      supabase
+        .from("matches")
+        .select("id, kickoff_at, home_team_id, away_team_id")
+        .neq("status", "finished")
+        .gt("kickoff_at", nowIso)
+        .order("kickoff_at", { ascending: true })
+        .limit(3),
+      supabase.rpc("group_leaderboard"),
+      supabase
+        .from("groups")
+        .select("name, join_code")
+        .eq("id", profile.group_id)
+        .single(),
+    ]);
   const openUpcoming = (upcoming ?? []).filter((m) => !isLocked(m.kickoff_at));
 
-  const myIndex = (board ?? []).findIndex((r) => r.user_id === user.id);
+  const myIndex = (board ?? []).findIndex(
+    (r: { user_id: string }) => r.user_id === user.id,
+  );
   const myRank = myIndex >= 0 ? myIndex + 1 : null;
   const myPoints =
     myIndex >= 0 ? Number((board ?? [])[myIndex].total_points) : 0;
@@ -93,6 +97,12 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-bold tracking-tight">
             {profile.display_name}
           </h1>
+          {group && (
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-xs text-neutral-400">{group.name}</span>
+              <InviteButton code={group.join_code} groupName={group.name} />
+            </div>
+          )}
         </div>
         <form action="/auth/signout" method="post">
           <button

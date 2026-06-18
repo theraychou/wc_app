@@ -26,14 +26,8 @@ export default async function LeaderboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data } = await supabase
-    .from("leaderboard")
-    .select(
-      "user_id, display_name, total_points, exact_hits, winner_hits, champion_correct, created_at",
-    )
-    .order("total_points", { ascending: false })
-    .order("exact_hits", { ascending: false })
-    .order("created_at", { ascending: true });
+  // group_leaderboard() returns the caller's group, already in tiebreaker order.
+  const { data } = await supabase.rpc("group_leaderboard");
 
   const rows = ((data ?? []) as Row[]).map((r) => ({
     ...r,
