@@ -107,20 +107,20 @@ export default async function DashboardPage() {
       <section className="mt-8 space-y-3">
         <a
           href="/leaderboard"
-          className="flex items-center justify-between rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 hover:bg-neutral-900"
+          className="flex items-center justify-between rounded-xl bg-yellow-300 p-4 hover:bg-yellow-400"
         >
           <div>
-            <p className="text-xs uppercase tracking-wide text-neutral-500">
+            <p className="text-xs uppercase tracking-wide text-black/70">
               Your standing
             </p>
-            <p className="text-lg font-bold text-neutral-50">
+            <p className="text-lg font-bold text-black">
               {myRank ? `Rank ${myRank} of ${playerCount}` : "Unranked"}
-              <span className="ml-2 text-sm font-normal text-neutral-400">
+              <span className="ml-2 text-sm font-normal text-black/70">
                 · {myPoints} pts
               </span>
             </p>
           </div>
-          <span className="text-sm text-emerald-400">Leaderboard →</span>
+          <span className="text-sm font-medium text-black">Leaderboard →</span>
         </a>
 
         <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 p-4">
@@ -181,6 +181,13 @@ export default async function DashboardPage() {
           className="block rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 text-sm font-medium text-neutral-100 hover:bg-neutral-900"
         >
           ⚽ Matches &amp; predictions →
+        </a>
+
+        <a
+          href="/bracket"
+          className="block rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 text-sm font-medium text-neutral-100 hover:bg-neutral-900"
+        >
+          🗂️ Knockout bracket →
         </a>
 
         <a

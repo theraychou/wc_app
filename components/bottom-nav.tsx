@@ -7,6 +7,7 @@ const HIDE_ON = ["/login", "/onboarding", "/auth"];
 const TABS = [
   { href: "/", label: "Home", icon: "🏠" },
   { href: "/matches", label: "Matches", icon: "⚽" },
+  { href: "/bracket", label: "Bracket", icon: "🗂️" },
   { href: "/leaderboard", label: "Ranks", icon: "🏅" },
   { href: "/champion", label: "Champion", icon: "🏆" },
 ];

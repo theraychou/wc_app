@@ -38,7 +38,10 @@ knockout stage. See [BUILD.md](BUILD.md) for the full spec.
   `/admin/data` raw tables. All admin-gated (RLS + server-action check).
 - 🚧 **10. Polish** — kickoff countdowns, thumb-reachable bottom nav, loading/error/not-found
   states done. Deploy to Vercel + cron-job.org pending (see [DEPLOY.md](DEPLOY.md)).
-- ⬜ 11. Bracket
+- ✅ **11. Bracket** — `/bracket`: data-driven knockout tree (`lib/bracket.ts` orders each round by
+  real lineage so connectors trace progression), teams/90'-scores/winners populate and propagate,
+  per-viewer points badges, pure-CSS connectors, horizontal-scroll mobile layout. Auto-adapts to the
+  2026 R32 format.
 
 ## Getting started
 
