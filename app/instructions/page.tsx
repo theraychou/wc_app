@@ -140,6 +140,52 @@ export default function InstructionsPage() {
         </ul>
       </Section>
 
+      <Section title="Groups">
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            You compete <strong>within your group</strong> — each group has its
+            own separate leaderboard, so you&apos;re only ranked against your own
+            people.
+          </li>
+          <li>
+            Join a group with its <strong>invite code</strong>, or create your
+            own and share the code (tap <strong>Invite</strong> to copy it).
+          </li>
+          <li>
+            You can be in <strong>more than one group</strong>. Your predictions
+            are the <strong>same everywhere</strong> — they just count on each
+            group&apos;s leaderboard. Switch between your groups&apos;
+            leaderboards with the tabs at the top of the Leaderboard.
+          </li>
+          <li>
+            You can <strong>leave</strong> a group any time from the Groups page;
+            your points stay in your other groups.
+          </li>
+        </ul>
+      </Section>
+
+      <Section title="Group owner">
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            Whoever <strong>creates</strong> a group is its <strong>owner</strong>
+            {" "}(shown with an &ldquo;owner&rdquo; badge in the member list).
+          </li>
+          <li>
+            The owner can <strong>remove members</strong> from the group (a
+            Remove button next to each member on the Groups page). Other members
+            can&apos;t remove anyone.
+          </li>
+          <li>
+            Anyone with the invite code can join — there&apos;s no approval step.
+          </li>
+          <li>
+            Separately, a <strong>game admin</strong> looks after the tournament
+            itself (pulling in results) for everyone — that&apos;s not a
+            per-group role.
+          </li>
+        </ul>
+      </Section>
+
       <a
         href="/"
         className="inline-block text-sm text-neutral-400 underline underline-offset-4 hover:text-neutral-200"
