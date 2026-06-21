@@ -48,6 +48,45 @@ export function JoinAnotherGroup() {
   );
 }
 
+export function RemoveMemberButton({
+  groupId,
+  memberId,
+  memberName,
+}: {
+  groupId: string;
+  memberId: string;
+  memberName: string;
+}) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  async function remove() {
+    if (!confirm(`Remove ${memberName} from the group?`)) return;
+    setBusy(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("remove_member", {
+      p_group_id: groupId,
+      p_user_id: memberId,
+    });
+    setBusy(false);
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    router.refresh();
+  }
+
+  return (
+    <button
+      onClick={remove}
+      disabled={busy}
+      className="text-[11px] text-neutral-500 hover:text-red-400 disabled:opacity-60"
+    >
+      {busy ? "…" : "Remove"}
+    </button>
+  );
+}
+
 export function LeaveGroupButton({
   groupId,
   groupName,

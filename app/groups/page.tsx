@@ -2,7 +2,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getMyGroups } from "@/lib/data/groups";
 import { InviteButton } from "@/components/invite-button";
-import { JoinAnotherGroup, LeaveGroupButton } from "./group-controls";
+import {
+  JoinAnotherGroup,
+  LeaveGroupButton,
+  RemoveMemberButton,
+} from "./group-controls";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +55,38 @@ export default async function GroupsPage() {
                 <InviteButton code={g.join_code} groupName={g.name} />
               </div>
             </div>
+            <ul className="mt-3 space-y-1 border-t border-neutral-800 pt-3">
+              {g.members.map((m) => {
+                const isYou = m.id === user.id;
+                const isOwner = m.id === g.owner_id;
+                return (
+                  <li
+                    key={m.id}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span className="truncate text-neutral-200">
+                      {m.display_name}
+                      {isYou && (
+                        <span className="ml-1 text-xs text-emerald-400">you</span>
+                      )}
+                      {isOwner && (
+                        <span className="ml-1 rounded-sm bg-neutral-800 px-1 text-[10px] text-neutral-400">
+                          owner
+                        </span>
+                      )}
+                    </span>
+                    {g.is_owner && !isYou && (
+                      <RemoveMemberButton
+                        groupId={g.id}
+                        memberId={m.id}
+                        memberName={m.display_name}
+                      />
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+
             <div className="mt-3 flex items-center justify-between">
               <a
                 href={`/leaderboard?group=${g.id}`}
