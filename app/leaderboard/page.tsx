@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getMyGroups } from "@/lib/data/groups";
 
 export const dynamic = "force-dynamic";
 
@@ -19,15 +20,28 @@ const PODIUM_RING = [
   "border-orange-700/50 bg-orange-700/10",
 ];
 
-export default async function LeaderboardPage() {
+export default async function LeaderboardPage({
+  searchParams,
+}: {
+  searchParams: { group?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // group_leaderboard() returns the caller's group, already in tiebreaker order.
-  const { data } = await supabase.rpc("group_leaderboard");
+  const myGroups = await getMyGroups(supabase, user.id);
+  // Selected group: ?group= if it's one of mine, else the primary (first).
+  const selected =
+    myGroups.find((g) => g.id === searchParams.group)?.id ??
+    myGroups[0]?.id ??
+    null;
+
+  // group_leaderboard(group_id) returns that group's ranking in tiebreaker order.
+  const { data } = selected
+    ? await supabase.rpc("group_leaderboard", { p_group_id: selected })
+    : { data: [] };
 
   const rows = ((data ?? []) as Row[]).map((r) => ({
     ...r,
@@ -51,6 +65,24 @@ export default async function LeaderboardPage() {
           ← Dashboard
         </a>
       </header>
+
+      {myGroups.length > 1 && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {myGroups.map((g) => (
+            <a
+              key={g.id}
+              href={`/leaderboard?group=${g.id}`}
+              className={`rounded-full border px-3 py-1 text-xs ${
+                g.id === selected
+                  ? "border-emerald-500 bg-emerald-600/20 text-emerald-200"
+                  : "border-neutral-700 text-neutral-300 hover:bg-neutral-900"
+              }`}
+            >
+              {g.name}
+            </a>
+          ))}
+        </div>
+      )}
 
       {rows.length === 0 ? (
         <p className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 text-sm text-neutral-400">

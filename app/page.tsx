@@ -5,6 +5,7 @@ import { getTeamMap, teamName } from "@/lib/data/teams";
 import { isLocked } from "@/lib/lock";
 import { Countdown } from "@/components/countdown";
 import { InviteButton } from "@/components/invite-button";
+import { getMyGroups } from "@/lib/data/groups";
 
 // Per-user, session-dependent — never statically cache the dashboard.
 export const dynamic = "force-dynamic";
@@ -60,7 +61,7 @@ export default async function DashboardPage() {
 
   // Next few matches still open for prediction.
   const nowIso = new Date().toISOString();
-  const [teamMap, { data: upcoming }, { data: board }, { data: group }] =
+  const [teamMap, { data: upcoming }, { data: board }, myGroups] =
     await Promise.all([
       getTeamMap(supabase),
       supabase
@@ -70,14 +71,11 @@ export default async function DashboardPage() {
         .gt("kickoff_at", nowIso)
         .order("kickoff_at", { ascending: true })
         .limit(3),
-      supabase.rpc("group_leaderboard"),
-      supabase
-        .from("groups")
-        .select("name, join_code")
-        .eq("id", profile.group_id)
-        .single(),
+      supabase.rpc("group_leaderboard"), // no-arg = primary group
+      getMyGroups(supabase, user.id),
     ]);
   const openUpcoming = (upcoming ?? []).filter((m) => !isLocked(m.kickoff_at));
+  const primaryGroup = myGroups[0] ?? null;
 
   const myIndex = (board ?? []).findIndex(
     (r: { user_id: string }) => r.user_id === user.id,
@@ -97,10 +95,23 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-bold tracking-tight">
             {profile.display_name}
           </h1>
-          {group && (
-            <div className="mt-1 flex items-center gap-2">
-              <span className="text-xs text-neutral-400">{group.name}</span>
-              <InviteButton code={group.join_code} groupName={group.name} />
+          {primaryGroup && (
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-neutral-400">
+                {primaryGroup.name}
+              </span>
+              <InviteButton
+                code={primaryGroup.join_code}
+                groupName={primaryGroup.name}
+              />
+              <a
+                href="/groups"
+                className="text-[11px] text-emerald-400 hover:underline"
+              >
+                {myGroups.length > 1
+                  ? `+${myGroups.length - 1} more · Groups`
+                  : "Groups"}
+              </a>
             </div>
           )}
         </div>
@@ -121,7 +132,7 @@ export default async function DashboardPage() {
         >
           <div>
             <p className="text-xs uppercase tracking-wide text-black/70">
-              Your standing
+              Your standing{primaryGroup ? ` · ${primaryGroup.name}` : ""}
             </p>
             <p className="text-lg font-bold text-black">
               {myRank ? `Rank ${myRank} of ${playerCount}` : "Unranked"}
