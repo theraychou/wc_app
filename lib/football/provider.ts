@@ -152,23 +152,26 @@ export async function fetchKnockoutFixtures(): Promise<FixturesResult> {
   const fixtures: KnockoutFixture[] = [];
 
   for (const f of raw) {
-    const round = ROUND_MAP[f.league?.round?.trim()];
-    if (!round) continue; // not a knockout round we track
-
-    const status = mapStatus(f.fixture?.status?.short ?? "NS");
-    const finished = status === "finished";
-
     const home = f.teams?.home;
     const away = f.teams?.away;
-    const homeId = home ? teamId(home) : null;
-    const awayId = away ? teamId(away) : null;
 
+    // Collect EVERY team that appears (group stage + knockouts) so the champion
+    // can be picked from all 48 even before the knockout bracket is set. Match
+    // predictions below stay knockout-only.
     for (const t of [home, away]) {
       const id = t ? teamId(t) : null;
       if (id && t?.name && !teams.has(id)) {
         teams.set(id, { id, name: t.name, flag_url: t.logo ?? null });
       }
     }
+
+    const round = ROUND_MAP[f.league?.round?.trim()];
+    if (!round) continue; // group stage → team kept, but no prediction match
+
+    const status = mapStatus(f.fixture?.status?.short ?? "NS");
+    const finished = status === "finished";
+    const homeId = home ? teamId(home) : null;
+    const awayId = away ? teamId(away) : null;
 
     let winnerId: string | null = null;
     if (home?.winner) winnerId = homeId;
