@@ -10,7 +10,11 @@ import { getMyGroups } from "@/lib/data/groups";
 // Per-user, session-dependent — never statically cache the dashboard.
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: { group?: string };
+}) {
   // Before Supabase is set up, show a setup notice instead of crashing.
   if (!isSupabaseConfigured()) {
     return (
@@ -61,21 +65,26 @@ export default async function DashboardPage() {
 
   // Next few matches still open for prediction.
   const nowIso = new Date().toISOString();
-  const [teamMap, { data: upcoming }, { data: board }, myGroups] =
-    await Promise.all([
-      getTeamMap(supabase),
-      supabase
-        .from("matches")
-        .select("id, kickoff_at, home_team_id, away_team_id")
-        .neq("status", "finished")
-        .gt("kickoff_at", nowIso)
-        .order("kickoff_at", { ascending: true })
-        .limit(3),
-      supabase.rpc("group_leaderboard"), // no-arg = primary group
-      getMyGroups(supabase, user.id),
-    ]);
+  const [teamMap, { data: upcoming }, myGroups] = await Promise.all([
+    getTeamMap(supabase),
+    supabase
+      .from("matches")
+      .select("id, kickoff_at, home_team_id, away_team_id")
+      .neq("status", "finished")
+      .gt("kickoff_at", nowIso)
+      .order("kickoff_at", { ascending: true })
+      .limit(3),
+    getMyGroups(supabase, user.id),
+  ]);
   const openUpcoming = (upcoming ?? []).filter((m) => !isLocked(m.kickoff_at));
   const primaryGroup = myGroups[0] ?? null;
+
+  // Standing shown for the selected group (?group=), defaulting to primary.
+  const selectedGroup =
+    myGroups.find((g) => g.id === searchParams.group) ?? primaryGroup;
+  const { data: board } = selectedGroup
+    ? await supabase.rpc("group_leaderboard", { p_group_id: selectedGroup.id })
+    : { data: [] };
 
   const myIndex = (board ?? []).findIndex(
     (r: { user_id: string }) => r.user_id === user.id,
@@ -126,13 +135,33 @@ export default async function DashboardPage() {
       </header>
 
       <section className="mt-8 space-y-3">
+        {myGroups.length > 1 && (
+          <div className="flex flex-wrap gap-2">
+            {myGroups.map((g) => (
+              <a
+                key={g.id}
+                href={`/?group=${g.id}`}
+                className={`rounded-full border px-3 py-1 text-xs ${
+                  g.id === selectedGroup?.id
+                    ? "border-emerald-500 bg-emerald-600/20 text-emerald-200"
+                    : "border-neutral-700 text-neutral-300 hover:bg-neutral-900"
+                }`}
+              >
+                {g.name}
+              </a>
+            ))}
+          </div>
+        )}
+
         <a
-          href="/leaderboard"
+          href={
+            selectedGroup ? `/leaderboard?group=${selectedGroup.id}` : "/leaderboard"
+          }
           className="flex items-center justify-between rounded-xl bg-yellow-300 p-4 hover:bg-yellow-400"
         >
           <div>
             <p className="text-xs uppercase tracking-wide text-black/70">
-              Your standing{primaryGroup ? ` · ${primaryGroup.name}` : ""}
+              Your standing{selectedGroup ? ` · ${selectedGroup.name}` : ""}
             </p>
             <p className="text-lg font-bold text-black">
               {myRank ? `Rank ${myRank} of ${playerCount}` : "Unranked"}
