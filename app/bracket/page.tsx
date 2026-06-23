@@ -2,9 +2,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getTeamMap } from "@/lib/data/teams";
 import { buildBracket, type RawMatch } from "@/lib/bracket";
+import { buildSkeleton } from "@/lib/bracket2026";
 import { Bracket } from "@/components/bracket";
+import { SkeletonBracket } from "@/components/skeleton-bracket";
 
 export const dynamic = "force-dynamic";
+
+const KNOCKOUT = new Set(["R32", "R16", "QF", "SF", "THIRD", "FINAL"]);
 
 export default async function BracketPage() {
   const supabase = createClient();
@@ -38,6 +42,11 @@ export default async function BracketPage() {
       pointsByMatch.set(p.match_id, p.points_awarded);
   }
 
+  // Show the real (data-driven) bracket once any knockout match has a team
+  // assigned; otherwise show the hard-coded 2026 structure skeleton.
+  const knockoutTeamsAssigned = rows.some(
+    (m) => KNOCKOUT.has(m.round) && (m.home_team_id || m.away_team_id),
+  );
   const data = buildBracket(rows, teamMap, pointsByMatch);
 
   return (
@@ -52,17 +61,22 @@ export default async function BracketPage() {
         </a>
       </header>
 
-      {data.rounds.length === 0 ? (
-        <p className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900/40 p-4 text-sm text-neutral-400">
-          No knockout matches yet — an admin needs to run a sync.
-        </p>
-      ) : (
+      {knockoutTeamsAssigned ? (
         <>
           <p className="mb-2 mt-2 px-2 text-xs text-neutral-500">
             Scroll sideways → · green = advanced · badge = your points · tap a
             match for details
           </p>
           <Bracket data={data} />
+        </>
+      ) : (
+        <>
+          <p className="mb-2 mt-2 px-2 text-xs text-neutral-500">
+            The Round of 32 isn&apos;t set yet — here&apos;s the bracket
+            structure. Real teams appear as the group stage finishes. Scroll
+            sideways →
+          </p>
+          <SkeletonBracket data={buildSkeleton()} />
         </>
       )}
     </main>
