@@ -3,31 +3,44 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Magic-link landing route. Handles two flows:
- *   - PKCE: a `code` from the normal in-app magic link → exchangeCodeForSession.
- *   - token_hash: an admin-generated link (no PKCE verifier) → verifyOtp. This
- *     lets an admin hand someone a working sign-in link when email delivery
- *     fails (e.g. spam).
+ * GET: the normal in-app magic link (PKCE `code`) → exchangeCodeForSession.
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const tokenHash = searchParams.get("token_hash");
-  const type = searchParams.get("type") as EmailOtpType | null;
   const next = searchParams.get("next") ?? "/";
 
-  const supabase = createClient();
-
   if (code) {
+    const supabase = createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) return NextResponse.redirect(`${origin}${next}`);
-  } else if (tokenHash && type) {
+  }
+  return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+}
+
+/**
+ * POST: admin-generated token_hash links, verified only on an explicit button
+ * click from /auth/confirm. Using POST means link-preview crawlers (WhatsApp,
+ * email scanners) that GET the URL can't consume the one-time token.
+ */
+export async function POST(request: Request) {
+  const { origin } = new URL(request.url);
+  const form = await request.formData();
+  const tokenHash = String(form.get("token_hash") ?? "");
+  const type = String(form.get("type") ?? "") as EmailOtpType;
+  const next = String(form.get("next") ?? "/");
+
+  if (tokenHash && type) {
+    const supabase = createClient();
     const { error } = await supabase.auth.verifyOtp({
       type,
       token_hash: tokenHash,
     });
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    if (!error) {
+      return NextResponse.redirect(`${origin}${next}`, { status: 303 });
+    }
   }
-
-  return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+  return NextResponse.redirect(`${origin}/auth/auth-code-error`, {
+    status: 303,
+  });
 }
